@@ -3,26 +3,26 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-class XcalTest extends iCalCreator_TestCase
+class XcalTest extends renderer_TestCase
 {
 	protected $outputformat = 'xcal';
 	
-	public function testSetAndGetiCalscale()
+	public function testSetAndGetCalscale()
 	{
 		$this->assertCalscale('JULIAN', 'calscale="JULIAN"');
 	}
 	
-	public function testSetAndGetiMethod()
+	public function testSetAndGetMethod()
 	{
 		$this->assertMethod('COUNTER', 'method="COUNTER"');
 	}
 			
-	public function testiCreateProdId()
-	{		
-		$this->assertContains('prodid=',$this->cal->createProdid());
+	public function testCreateProdId()
+	{	
+		$this->assertContains('prodid=',$this->getRenderer()->createProdid());
 	}
 	
-	public function testiVersion()
+	public function testVersion()
 	{
 		$this->assertVersion('2.0', 'version="2.0"');
 	}
