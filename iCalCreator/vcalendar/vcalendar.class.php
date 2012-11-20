@@ -834,7 +834,7 @@ function getVersion()
  */
   function setComponent( $component, $arg1=FALSE, $arg2=FALSE  ) {
     $component->setConfig( $this->getConfig(), FALSE, TRUE );
-    $this->componentHolder->setComponent($component);
+    $this->componentHolder->setComponent($component, $arg1, $arg2);
   }
 /**
  * sort iCal compoments

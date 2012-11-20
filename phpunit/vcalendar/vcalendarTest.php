@@ -22,14 +22,21 @@ class vcalendarTest extends iCalCreator_TestCase
 		
 		$this->assertEquals($component, $got);
 		
-//		$got = $this->cal->selectComponents(false, false, false, false, false, false, 'VTODO');
-//		
-//		$this->assertEquals($component, $got);
-		
 		$got = $this->cal->deleteComponent('VTODO', '1');
 		$got = $this->cal->getComponent('VTODO', '1');
-		
+				
 		$this->assertFalse($got);
+		
+		$comp = new vtodo();	
+		$comp2 = new vevent();	
+		$compuid = $comp->getProperty('uid');
+		$this->cal->setComponent($comp, 99);
+		$this->cal->addComponent($comp2);
+		$this->assertEquals($comp, $this->cal->componentHolder->components[99 -1]);
+		$this->cal->setComponent($comp2, $compuid);
+		$this->assertEquals($comp2, $this->cal->componentHolder->components[99 -1]);
+		$this->cal->setComponent($comp, 'vevent', 1);		
+		$this->assertEquals($comp, $this->cal->componentHolder->components[99 -1]);
 	}
 	
 	public function provideProperties()
