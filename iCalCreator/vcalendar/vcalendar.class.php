@@ -8,10 +8,48 @@
  */
 class vcalendar {
             //  calendar property variables
+	/** @var string GREGORIAN is the only scale recognized by RFC5545 */
   var $calscale;
+  /** @var string one of PUBLISH, REQUEST , REFRESH, CANCEL, ADD, REPLY, COUNTER, DECLINECOUNTER */
   var $method;
+  /**
+	 * Property Name: PRODID
+	 *
+	 *  The identifier is RECOMMENDED to be the identical syntax to the
+	 * [RFC 822] addr-spec. A good method to assure uniqueness is to put the
+	 * domain name or a domain literal IP address of the host on which.. .
+	 * 
+	 * Conformance: The property MUST be specified once in an iCalendar object.
+	 * Description: The vendor of the implementation SHOULD assure that this
+	 * is a globally unique identifier; using some technique such as an FPI
+	 * value, as defined in [ISO 9070].
+	 * 
+	 * @var string
+	 */
   var $prodid;
+  /**
+	 * Property Name: VERSION
+	 *
+	 * Description: A value of "2.0" corresponds to this memo.
+	 * 
+	 * @var string
+	 */
   var $version;
+  /**
+	 * A dictionary of calendar Properties.
+	 * 
+	 * The key is the name of the property, the value is itself dictionary of 
+	 * 'value' and 'params' keys.
+	 * 
+	 * array(
+	 *   'X-PROP' => array(
+	 *                   'value' => 3,
+	 *                   'params' => 'foo'
+	 *               );
+	 * );
+	 * 
+	 * @var array calendar property variables
+	 */
   var $xprop;
             //  container for calendar components
   var $components;
@@ -1746,7 +1784,8 @@ function getVersion()
 /*********************************************************************************/
 
   function createCalendar() {
-	  $renderer = new baserenderer( $this );
+	  $class = strtolower($this->getConfig('FORMAT')).'renderer';
+	  $renderer = new $class( $this );
 	  return $renderer->createCalendar();
   }
 }

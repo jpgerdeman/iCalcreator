@@ -14,7 +14,9 @@ class renderer_TestCase extends iCalCreator_TestCase
 	
 	public function getRenderer()
 	{		
-		return new baserenderer( $this->cal );	  
+		$class = strtolower($this->outputformat).'renderer';
+		$renderer = new $class( $this->cal );
+		return $renderer;
 	}
 	
 	public function assertVersion( $value, $expected )
