@@ -66,3 +66,4 @@ include_once __DIR__.'/iCalCreator/vcalendar/HTTPvcalendar.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/renderer/baserenderer.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/renderer/icalrenderer.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/renderer/xcalrenderer.class.php';
+include_once __DIR__.'/iCalCreator/vcalendar/componentHolder.class.php';
