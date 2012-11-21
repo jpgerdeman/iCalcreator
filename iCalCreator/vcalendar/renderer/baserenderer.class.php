@@ -11,7 +11,7 @@ abstract class baserenderer
 		$this->version = $this->calendar->getVersion();
 		$this->xprop = $this->calendar->getXProp();
 		$this->nl = $this->calendar->getConfig('NEWLINECHAR');
-		$this->components = $this->calendar->components;
+		$this->components = $this->calendar->componentHolder->components;
 		// getconfig returns format in wrong casing
 		$this->format = strtolower($this->calendar->getConfig('FORMAT'));		
 	}

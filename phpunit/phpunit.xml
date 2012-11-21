@@ -7,6 +7,9 @@
     <testsuite>
       <directory>vcalendar</directory>
     </testsuite>
+    <testsuite>
+      <directory>integration</directory>
+    </testsuite>
   </testsuites>
 </phpunit>
 
