@@ -9,7 +9,8 @@ class componentHolder
 {
 
 	var $components = array();
-
+	var $compix = null;
+	
 	/**
 	 * add calendar component to container
 	 *
@@ -156,20 +157,21 @@ class componentHolder
 		{ // first or next in component chain
 			$argType = 'INDEX';
 			$index = $this->compix['INDEX'] = ( isset($this->compix['INDEX'])) ? $this->compix['INDEX'] + 1 : 1;
+			return $this->getComponentByIndex($index);
 		}
 		elseif (ctype_digit((string) $arg1))
-		{ // specific component in chain
+		{ 
+		    // specific component in chain
 			$argType = 'INDEX';
-			$index = (int) $arg1;
 			unset($this->compix);
+			return $this->getComponentByIndex($arg1);
 		}
 		elseif (is_array($arg1))
 		{ // array( *[propertyName => propertyValue] )
 			$arg2 = implode('-', array_keys($arg1));
 			$index = $this->compix[$arg2] = ( isset($this->compix[$arg2])) ? $this->compix[$arg2] + 1 : 1;
-			$dateProps = array('DTSTART', 'DTEND', 'DUE', 'CREATED', 'COMPLETED', 'DTSTAMP', 'LAST-MODIFIED', 'RECURRENCE-ID');
-			$otherProps = array('ATTENDEE', 'CATEGORIES', 'CONTACT', 'LOCATION', 'ORGANIZER', 'PRIORITY', 'RELATED-TO', 'RESOURCES', 'STATUS', 'SUMMARY', 'UID', 'URL');
-			$mProps = array('ATTENDEE', 'CATEGORIES', 'CONTACT', 'RELATED-TO', 'RESOURCES');
+						
+			return $this->getComponentByProperty( $arg1, $index );
 		}
 		elseif (( strlen($arg1) <= strlen('vfreebusy')) && ( FALSE === strpos($arg1, '@')))
 		{ // object class name
@@ -179,6 +181,7 @@ class componentHolder
 				$index = $this->compix[$argType] = ( isset($this->compix[$argType])) ? $this->compix[$argType] + 1 : 1;
 			elseif (isset($arg2) && ctype_digit((string) $arg2))
 				$index = (int) $arg2;
+			return $this->getComponentByType($argType, $index);
 		}
 		elseif (( strlen($arg1) > strlen('vfreebusy')) && ( FALSE !== strpos($arg1, '@')))
 		{ // UID as 1st argument
@@ -186,29 +189,126 @@ class componentHolder
 				$index = $this->compix[$arg1] = ( isset($this->compix[$arg1])) ? $this->compix[$arg1] + 1 : 1;
 			elseif (isset($arg2) && ctype_digit((string) $arg2))
 				$index = (int) $arg2;
+			return $this->getComponentByUid($arg1, $index);
 		}
-		if (isset($index))
-			$index -= 1;
-		$ckeys = array_keys($this->components);
-		if (!empty($index) && ( $index > end($ckeys)))
+				
+		unset($this->compix);
+		return FALSE;
+	}
+		
+	/**
+	 * Return the component at given position.
+	 *  
+	 * @param int $index The position of the component
+	 *
+	 * @return calendarComponent|bool Return the component or False if no component was found
+	 */
+	function getComponentByIndex( $index )
+	{
+		$index = (int) $index - 1;
+		if( isset($this->components[$index]) && !empty($this->components[$index]))
+		{
+			$c = $this->components[$index];		
+			return $c->copy();
+		}
+		else
+		{
 			return FALSE;
+		}		
+	}
+	
+	/**
+	 * Return the component with uid.
+	 *  
+	 * @param string $uid The uid of the component to be returned
+	 *
+	 * @return calendarComponent|bool Return the component or False if no matching component was found
+	 */
+	function getComponentByUid($uid, $index)
+	{
+		$index--;
+		$cix1gC = 0;		
+		foreach ($this->components as $cix => $component)
+		{
+			if (empty($component))
+				continue;
+			
+			if ( $uid == $component->getProperty('uid') && $cix1gC = $index )
+			{				
+				return $component->copy();				
+			}
+			$cix1gC++;
+		}
+		return FALSE;
+	}
+	
+	/**
+	 * Return nth occurence of component of given type.
+	 * 
+	 * **Example**:
+	 *     
+	 *     $this->getComponentByType( 'vevent', 2);
+	 *     // returns the second vevent
+	 * 
+	 * @param string $type The type of component
+	 * @param int $position The occurence 
+	 *
+	 * @return calendarComponent|bool Return the component or False if no matching component was found
+	 */
+	public function getComponentByType( $type, $position )
+	{			
+		$position --;
+		$cix1dC = 0;
+		foreach ($this->components as $cix => $component)
+		{
+			if (empty($component))
+				continue;
+			if ($type == $component->objName)
+			{				
+				if ($position == $cix1dC)
+				{
+					return $component->copy();
+				}
+				$cix1dC++;
+			}
+		}
+		return FALSE;
+	}	
+	
+	/**
+	 * Return nth occurence of component with given properties.
+	 * 
+	 * **Example**:
+	 *     
+	 *     $this->getComponentByType( array('LOCATION' => 'Tampa'), 2);
+	 *     // returns the second vevent at Tampa
+	 * 
+	 * @param array $properties The properties of the saught after component
+	 * @param int $position The occurence 
+	 *
+	 * @return calendarComponent|bool Return the component or False if no matching component was found
+	 */
+	public function getComponentByProperty( $properties, $position )
+	{
+		$dateProps = array('DTSTART', 'DTEND', 'DUE', 'CREATED', 'COMPLETED', 'DTSTAMP', 'LAST-MODIFIED', 'RECURRENCE-ID');
+		$otherProps = array('ATTENDEE', 'CATEGORIES', 'CONTACT', 'LOCATION', 'ORGANIZER', 'PRIORITY', 'RELATED-TO', 'RESOURCES', 'STATUS', 'SUMMARY', 'UID', 'URL');
+		$mProps = array('ATTENDEE', 'CATEGORIES', 'CONTACT', 'RELATED-TO', 'RESOURCES');
+		
+		$position--;
+		
+		$ckeys = array_keys($this->components);
+		if (!empty($position) && ( $position > end($ckeys)))
+			return FALSE;
+		
 		$cix1gC = 0;
 		foreach ($this->components as $cix => $component)
 		{
 			if (empty($component))
 				continue;
-			if (( 'INDEX' == $argType ) && ( $index == $cix ))
-				return $component->copy();
-			elseif ($argType == $component->objName)
-			{
-				if ($index == $cix1gC)
-					return $component->copy();
-				$cix1gC++;
-			}
-			elseif (is_array($arg1))
+			if (is_array($properties))
 			{ // array( *[propertyName => propertyValue] )
 				$hit = array();
-				foreach ($arg1 as $pName => $pValue)
+				foreach ($properties as $pName => $pValue)
 				{
 					$pName = strtoupper($pName);
 					if (!in_array($pName, $dateProps) && !in_array($pName, $otherProps))
@@ -266,23 +366,16 @@ class componentHolder
 				} // end  foreach( $arg1 as $pName => $pValue )
 				if (in_array(TRUE, $hit))
 				{
-					if ($index == $cix1gC)
+					if ($position == $cix1gC)
 						return $component->copy();
 					$cix1gC++;
 				}
 			} // end elseif( is_array( $arg1 )) { // array( *[propertyName => propertyValue] )
-			elseif (!$argType && ($arg1 == $component->getProperty('uid')))
-			{ // UID
-				if ($index == $cix1gC)
-					return $component->copy();
-				$cix1gC++;
-			}
 		} // end foreach ( $this->components.. .
 		/* not found.. . */
-		unset($this->compix);
 		return FALSE;
 	}
-
+	
 	function & newComponent($compType, $config)
 	{
 		$keys = array_keys($this->components);
@@ -347,86 +440,47 @@ class componentHolder
 			return FALSE;
 		if (is_array($startY))
 			return $this->selectComponents2($startY);
-		/* check default dates */
-		if (!$startY)
-			$startY = date('Y');
-		if (!$startM)
-			$startM = date('m');
-		if (!$startD)
-			$startD = date('d');
-		$startDate = mktime(0, 0, 0, $startM, $startD, $startY);
-		if (!$endY)
-			$endY = $startY;
-		if (!$endM)
-			$endM = $startM;
-		if (!$endD)
-			$endD = $startD;
-		$endDate = mktime(23, 59, 59, $endM, $endD, $endY);
-//echo 'selectComp arg='.date( 'Y-m-d H:i:s', $startDate).' -- '.date( 'Y-m-d H:i:s', $endDate)."<br />\n"; $tcnt = 0;// test ###
-		/* check component types */
-		$validTypes = array('vevent', 'vtodo', 'vjournal', 'vfreebusy');
-		if (is_array($cType))
-		{
-			foreach ($cType as $cix => $theType)
-			{
-				$cType[$cix] = $theType = strtolower($theType);
-				if (!in_array($theType, $validTypes))
-					$cType[$cix] = 'vevent';
-			}
-			$cType = array_unique($cType);
-		}
-		elseif (!empty($cType))
-		{
-			$cType = strtolower($cType);
-			if (!in_array($cType, $validTypes))
-				$cType = array('vevent');
-			else
-				$cType = array($cType);
-		}
-		else
-			$cType = $validTypes;
-		if (0 >= count($cType))
-			$cType = $validTypes;
+	
+		list( $startDate, $endDate ) = $this->makeDates($startY, $startM, $startD, $endY, $endM, $endD);
+		$cType = $this->intersectValidTypes($cType);
+				
+		// check option combinations
 		if (( FALSE === $flat ) && ( FALSE === $any )) // invalid combination
 			$split = FALSE;
 		if (( TRUE === $flat ) && ( TRUE === $split )) // invalid combination
 			$split = FALSE;
-		/* iterate components */
+
+		
 		$result = array();
 		foreach ($this->components as $cix => $component)
 		{
 			if (empty($component))
 				continue;
-			unset($start);
+			
 			/* deselect unvalid type components */
 			if (!in_array($component->objName, $cType))
 				continue;
+			
+			unset($start);
 			$start = $component->getProperty('dtstart');
 			/* select due when dtstart is missing */
 			if (empty($start) && ( $component->objName == 'vtodo' ) && ( FALSE === ( $start = $component->getProperty('due'))))
 				continue;
 			if (empty($start))
 				continue;
+			
 			$dtendExist = $dueExist = $durationExist = $endAllDayEvent = $recurrid = FALSE;
 			unset($end, $startWdate, $endWdate, $rdurWsecs, $rdur, $exdatelist, $workstart, $workend, $endDateFormat); // clean up
 			$startWdate = iCalUtilityFunctions::_date2timestamp($start);
 			$startDateFormat = ( isset($start['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+			
 			/* get end date from dtend/due/duration properties */
+			$endDateFormat = $this->computeEndDateFormatOfComponent($component);
+			$dtendExist = $this->doesEndDateOfComponentExist($component);
+			$dueExist = $this->doesDueDateOfComponentExist($component);
+			$durationExist = $this->doesDurationOfComponentExist($component);
+			
 			$end = $component->getProperty('dtend');
-			if (!empty($end))
-			{
-				$dtendExist = TRUE;
-				$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
-			}
-			if (empty($end) && ( $component->objName == 'vtodo' ))
-			{
-				$end = $component->getProperty('due');
-				if (!empty($end))
-				{
-					$dueExist = TRUE;
-					$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
-				}
-			}
 			if (!empty($end) && !isset($end['hour']))
 			{
 				/* a DTEND without time part regards an event that ends the day before,
@@ -438,14 +492,6 @@ class componentHolder
 				$end['day'] = date('d', $endWdate);
 				$end['hour'] = 23;
 				$end['min'] = $end['sec'] = 59;
-			}
-			if (empty($end))
-			{
-				$end = $component->getProperty('duration', FALSE, FALSE, TRUE); // in dtend (array) format
-				if (!empty($end))
-					$durationExist = TRUE;
-				$endDateFormat = ( isset($start['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
-// if( !empty($end))  echo 'selectComp 4 start='.implode('-',$start).' end='.implode('-',$end)."<br />\n"; // test ###
 			}
 			if (empty($end))
 			{ // assume one day duration if missing end date
@@ -748,6 +794,140 @@ class componentHolder
 	}
 
 	/**
+	 * Create Time strings from given Parameters.
+	 * 
+	 * Startdate defaults to today. Enddate defaults to startdate.
+	 * 
+	 * @param int $startY
+	 * @param int $startM
+	 * @param int $startD
+	 * @param int $endY
+	 * @param int $endM
+	 * @param int $endD
+	 * 
+	 * @return string[] startdate and enddate
+	 */
+	function makeDates($startY = FALSE, $startM = FALSE, $startD = FALSE, $endY = FALSE, $endM = FALSE, $endD = FALSE)
+	{
+		/* check default dates */
+		if (!$startY)
+			$startY = date('Y');
+		if (!$startM)
+			$startM = date('m');
+		if (!$startD)
+			$startD = date('d');
+		$startDate = mktime(0, 0, 0, $startM, $startD, $startY);
+		if (!$endY)
+			$endY = $startY;
+		if (!$endM)
+			$endM = $startM;
+		if (!$endD)
+			$endD = $startD;
+		$endDate = mktime(23, 59, 59, $endM, $endD, $endY);
+		
+		return array( $startDate, $endDate );
+	}
+	
+	/**
+	 * Intersect the given (array of) component type with allowed types.
+	 * 
+	 * @param mixed $cType ComponentType string or Array thereof
+	 * @return mixed
+	 */
+	function intersectValidTypes( $cType )
+	{
+		/* intersect cTypes with valid types */
+		$validTypes = array('vevent', 'vtodo', 'vjournal', 'vfreebusy');
+		if (is_array($cType))
+		{
+			foreach ($cType as $cix => $theType)
+			{
+				$cType[$cix] = $theType = strtolower($theType);
+				if (!in_array($theType, $validTypes))
+					$cType[$cix] = 'vevent';
+			}
+			$cType = array_unique($cType);
+		}
+		elseif (!empty($cType))
+		{
+			$cType = strtolower($cType);
+			if (!in_array($cType, $validTypes))
+				$cType = array('vevent');
+			else
+				$cType = array($cType);
+		}
+		else
+			$cType = $validTypes;
+		if (0 >= count($cType))
+			$cType = $validTypes;
+		
+		return $cType;
+	}
+	
+	/**
+	 * Compute needed dateformat for enddate from component properties.
+	 * 
+	 * @param type $component
+	 * @return type
+	 */
+	function computeEndDateFormatOfComponent($component)
+	{
+		$end = $component->getProperty('dtend');
+		if (!empty($end))
+		{				
+			$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+		}
+		if (empty($end) && ( $component->objName == 'vtodo' ))
+		{
+			$end = $component->getProperty('due');
+			if (!empty($end))
+			{
+				$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+			}
+		}
+		if (empty($end))
+		{				
+			$endDateFormat = ( isset($start['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+		}
+		return $endDateFormat;
+	}
+	
+	function doesEndDateOfComponentExist($component)
+	{
+		$end = $component->getProperty('dtend');
+		if (!empty($end))
+		{
+			return TRUE;
+		}
+		return FALSE;
+	}
+	
+	function doesDueDateOfComponentExist($component)
+	{		
+		$end = $component->getProperty('dtend');
+		if (empty($end) && ( $component->objName == 'vtodo' ))
+		{
+			$end = $component->getProperty('due');
+			if (!empty($end))
+			{
+				return TRUE;
+			}
+		}
+		return FALSE;
+	}
+	
+	function doesDurationOfComponentExist($component)
+	{
+		if (empty($end))
+		{
+			$end = $component->getProperty('duration', FALSE, FALSE, TRUE); // in dtend (array) format
+			if (!empty($end))
+				return TRUE;
+		}			
+		return FALSE;
+	}
+
+	/**
 	 * select components from calendar on based on specific property value(-s)
 	 *
 	 * @author Kjell-Inge Gustafsson, kigkonsult <ical@kigkonsult.se>
@@ -866,7 +1046,7 @@ class componentHolder
 		
 		if( isset($this->components[$index]) && !empty($this->components[$index]))
 		{
-			unset($this->components[$cix]);
+			unset($this->components[$index]);
 			return TRUE;
 		}
 		else

@@ -9,11 +9,22 @@
  */
 class PayDayTest extends renderer_TestCase
 {
+	
+	public function testIcal()
+	{
+		$actual = $this->createPayday('ical');
+		$expected = $this->getExpectedIcal();
+		$this->assertEqualIcals($actual->createCalendar(), $expected);
+	}
+	
+	public function testXcal()
+	{
+		$actual = $this->createPayday('xcal');
+		$expected = $this->getExpectedXcal();
+		$this->assertEqualCalendarOutput($actual->createCalendar(), $expected);
+	}
 
-	/**
-	 * @dataProvider formatProvider
-	 */
-	public function testCalendarCreation( $format, $expectedOutput )
+	public function createPayday( $format )
 	{
 		$c = new vcalendar (array('format' => $format ));
 		$c->setProperty('calscale', 'GREGORIAN');
@@ -55,7 +66,8 @@ class PayDayTest extends renderer_TestCase
 			, 'BYSETPOS'	 => -1));
 		$e->setProperty('summary', 'PAY DAY');
 		$e->setProperty('uid', 'DC3D0301C7790B38631F1FBB@ninevah.local');
-		$this->assertEqualCalendarOutput($c->createCalendar(), $expectedOutput);
+		
+		return $c;
 	}
 	
 	public function assertEqualCalendarOutput( $got, $expected )
@@ -69,14 +81,6 @@ class PayDayTest extends renderer_TestCase
 		$expected = preg_replace( '/<dtstamp>\d{8}T\d{6}Z<\/dtstamp>/', '<dtstamp>12345678T123456Z</dtstamp>', $expected );
 		
 		$this->assertEquals( $got, $expected );
-	}
-	
-	public function formatProvider()
-	{
-		return array(
-			array('ical', $this->getExpectedIcal()),
-			array('xcal', $this->getExpectedXcal()),
-		);
 	}
 
 	public function getExpectedIcal()
