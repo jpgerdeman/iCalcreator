@@ -435,6 +435,9 @@ class componentHolder
 	 */
 	function selectComponents($startY = FALSE, $startM = FALSE, $startD = FALSE, $endY = FALSE, $endM = FALSE, $endD = FALSE, $cType = FALSE, $flat = FALSE, $any = TRUE, $split = TRUE)
 	{
+		// all utc strings are named *W*
+		// end and start refer to an array representation
+		
 		/* check  if empty calendar */
 		if (0 >= count($this->components))
 			return FALSE;
@@ -451,9 +454,9 @@ class componentHolder
 			$split = FALSE;
 
 		
-		$result = array();
 		foreach ($this->components as $cix => $component)
 		{
+			$compTimes = new Component_Decorator_TimeSelector($component);
 			if (empty($component))
 				continue;
 			
@@ -472,79 +475,27 @@ class componentHolder
 			$dtendExist = $dueExist = $durationExist = $endAllDayEvent = $recurrid = FALSE;
 			unset($end, $startWdate, $endWdate, $rdurWsecs, $rdur, $exdatelist, $workstart, $workend, $endDateFormat); // clean up
 			$startWdate = iCalUtilityFunctions::_date2timestamp($start);
-			$startDateFormat = ( isset($start['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+
+			$startDateFormat = $compTimes->computeStartDateFormat();
+			$endDateFormat = $compTimes->computeEndDateFormat();
+			$dtendExist = $compTimes->hasEndDate();
+			$dueExist = $compTimes->hasDueDate();
+			$durationExist = $compTimes->hasDuration();
+			$isRecurring = $compTimes->isRecurring();
+			$end = $compTimes->computeEndDate();
+			$endAllDayEvent = $compTimes->isAllDayEvent();
+			$compUID = $component->getProperty('UID');
 			
-			/* get end date from dtend/due/duration properties */
-			$endDateFormat = $this->computeEndDateFormatOfComponent($component);
-			$dtendExist = $this->doesEndDateOfComponentExist($component);
-			$dueExist = $this->doesDueDateOfComponentExist($component);
-			$durationExist = $this->doesDurationOfComponentExist($component);
-			
-			$end = $component->getProperty('dtend');
-			if (!empty($end) && !isset($end['hour']))
-			{
-				/* a DTEND without time part regards an event that ends the day before,
-				  for an all-day event DTSTART=20071201 DTEND=20071202 (taking place 20071201!!! */
-				$endAllDayEvent = TRUE;
-				$endWdate = mktime(23, 59, 59, $end['month'], ($end['day'] - 1), $end['year']);
-				$end['year'] = date('Y', $endWdate);
-				$end['month'] = date('m', $endWdate);
-				$end['day'] = date('d', $endWdate);
-				$end['hour'] = 23;
-				$end['min'] = $end['sec'] = 59;
-			}
-			if (empty($end))
-			{ // assume one day duration if missing end date
-				$end = array('year'		 => $start['year'], 'month'		 => $start['month'], 'day'		 => $start['day'], 'hour'		 => 23, 'min'		 => 59, 'sec'		 => 59);
-			}
-// if( isset($end))  echo 'selectComp 5 start='.implode('-',$start).' end='.implode('-',$end)."<br />\n"; // test ###
 			$endWdate = iCalUtilityFunctions::_date2timestamp($end);
-			if ($endWdate < $startWdate)
-			{ // MUST be after start date!!
-				$end = array('year'		 => $start['year'], 'month'		 => $start['month'], 'day'		 => $start['day'], 'hour'		 => 23, 'min'		 => 59, 'sec'		 => 59);
-				$endWdate = iCalUtilityFunctions::_date2timestamp($end);
-			}
+			
 			$rdurWsecs = $endWdate - $startWdate; // compute event (component) duration in seconds
 			/* make a list of optional exclude dates for component occurence from exrule and exdate */
-			$exdatelist = array();
+			$exdatelist = $compTimes->computeExcludeDates();
 			$workstart = iCalUtilityFunctions::_timestamp2date(( $startDate - $rdurWsecs), 6);
 			$workend = iCalUtilityFunctions::_timestamp2date(( $endDate + $rdurWsecs), 6);
-			while (FALSE !== ( $exrule = $component->getProperty('exrule')))	// check exrule
-				iCalUtilityFunctions::_recur2date($exdatelist, $exrule, $start, $workstart, $workend);
-			while (FALSE !== ( $exdate = $component->getProperty('exdate')))
-			{  // check exdate
-				foreach ($exdate as $theExdate)
-				{
-					$exWdate = iCalUtilityFunctions::_date2timestamp($theExdate);
-					$exWdate = mktime(0, 0, 0, date('m', $exWdate), date('d', $exWdate), date('Y', $exWdate)); // on a day-basis !!!
-					if ((( $startDate - $rdurWsecs ) <= $exWdate ) && ( $endDate >= $exWdate ))
-						$exdatelist[$exWdate] = TRUE;
-				} // end - foreach( $exdate as $theExdate )
-			}  // end - check exdate
-			$compUID = $component->getProperty('UID');
-			/* check recurrence-id (with sequence), remove hit with reccurr-id date */
-			if (( FALSE !== ( $recurrid = $component->getProperty('recurrence-id'))) &&
-					( FALSE !== ( $sequence = $component->getProperty('sequence'))))
-			{
-				$recurrid = iCalUtilityFunctions::_date2timestamp($recurrid);
-				$recurrid = mktime(0, 0, 0, date('m', $recurrid), date('d', $recurrid), date('Y', $recurrid)); // on a day-basis !!!
-				$endD = $recurrid + $rdurWsecs;
-				do
-				{
-					if (date('Ymd', $startWdate) != date('Ymd', $recurrid))
-						$exdatelist[$recurrid] = TRUE; // exclude all other days than startdate
-					$wd = getdate($recurrid);
-					if (isset($result[$wd['year']][$wd['mon']][$wd['mday']][$compUID]))
-						unset($result[$wd['year']][$wd['mon']][$wd['mday']][$compUID]); // remove from output, dtstart etc added below
-					if ($split && ( $recurrid <= $endD ))
-						$recurrid = mktime(0, 0, 0, date('m', $recurrid), date('d', $recurrid) + 1, date('Y', $recurrid)); // step one day
-					else
-						break;
-				} while (TRUE);
-			} // end recurrence-id/sequence test
+							
 			/* select only components with.. . */
-			if ((!$any && ( $startWdate >= $startDate ) && ( $startWdate <= $endDate )) || // (dt)start within the period
-					( $any && ( $startWdate < $endDate ) && ( $endWdate >= $startDate )))
+			if ( $compTimes->isWithinPeriod($startDate, $endDate, !$any) )
 			{	// occurs within the period
 				/* add the selected component (WITHIN valid dates) to output array */
 				if ($flat)
@@ -562,14 +513,18 @@ class componentHolder
 					$startYMD = date('Ymd', $rstart);
 					$endYMD = date('Ymd', $endWdate);
 					$checkDate = mktime(0, 0, 0, date('m', $rstart), date('d', $rstart), date('Y', $rstart)); // on a day-basis !!!
+					
 					while (date('Ymd', $rstart) <= $endYMD)
 					{ // iterate
+						
 						$checkDate = mktime(0, 0, 0, date('m', $rstart), date('d', $rstart), date('Y', $rstart)); // on a day-basis !!!
 						if (isset($exdatelist[$checkDate]))
 						{ // exclude any recurrence date, found in exdatelist
 							$rstart = mktime(date('H', $rstart), date('i', $rstart), date('s', $rstart), date('m', $rstart), date('d', $rstart) + 1, date('Y', $rstart)); // step one day
 							continue;
 						}
+						
+						// Update start properties
 						if (date('Ymd', $rstart) > $startYMD) // date after dtstart
 							$datestring = date($startDateFormat, mktime(0, 0, 0, date('m', $rstart), date('d', $rstart), date('Y', $rstart)));
 						else
@@ -578,6 +533,8 @@ class componentHolder
 							$datestring .= ' ' . $start['tz'];
 // echo "X-CURRENT-DTSTART 3 = $datestring xRecurrence=$xRecurrence tcnt =".++$tcnt."<br />";$component->setProperty( 'X-CNT', $tcnt ); // test ###
 						$component->setProperty('X-CURRENT-DTSTART', $datestring);
+						
+						// Update end properties if applicable
 						if ($dtendExist || $dueExist || $durationExist)
 						{
 							if (date('Ymd', $rstart) < $endYMD) // not the last day
@@ -592,10 +549,16 @@ class componentHolder
 							$propName = (!$dueExist ) ? 'X-CURRENT-DTEND' : 'X-CURRENT-DUE';
 							$component->setProperty($propName, $datestring);
 						} // end if( $dtendExist || $dueExist || $durationExist )
+						
+						// prepare next iteration step
 						$wd = getdate($rstart);
 						$result[$wd['year']][$wd['mon']][$wd['mday']][$compUID] = $component->copy(); // copy to output
 						$rstart = mktime(date('H', $rstart), date('i', $rstart), date('s', $rstart), date('m', $rstart), date('d', $rstart) + 1, date('Y', $rstart)); // step one day
 					} // end while( $rstart <= $endWdate )
+				
+					
+					
+					
 				} // end if( $split )   -  else use component date
 				elseif ($recurrid && !$flat && !$any && !$split)
 					$continue = TRUE;
@@ -757,37 +720,9 @@ class componentHolder
 				if (( $endWdate < $startDate ) || ( $startWdate > $endDate ))
 					continue;
 			} // end if( TRUE === $any )
-		} // end foreach ( $this->components as $cix => $component )
-		if (0 >= count($result))
-			return FALSE;
-		elseif (!$flat)
-		{
-			foreach ($result as $y => $yeararr)
-			{
-				foreach ($yeararr as $m => $montharr)
-				{
-					foreach ($montharr as $d => $dayarr)
-					{
-						if (empty($result[$y][$m][$d]))
-							unset($result[$y][$m][$d]);
-						else
-							$result[$y][$m][$d] = array_values($dayarr); // skip tricky UID-index, hoping they are in hour order.. .
-					}
-					if (empty($result[$y][$m]))
-						unset($result[$y][$m]);
-					else
-						ksort($result[$y][$m]);
-				}
-				if (empty($result[$y]))
-					unset($result[$y]);
-				else
-					ksort($result[$y]);
-			}
-			if (empty($result))
-				unset($result);
-			else
-				ksort($result);
-		} // end elseif( !$flat )
+		}
+		
+		$result = $this->sortNestedDates($result);
 		if (0 >= count($result))
 			return FALSE;
 		return $result;
@@ -865,66 +800,42 @@ class componentHolder
 	}
 	
 	/**
-	 * Compute needed dateformat for enddate from component properties.
+	 * Sort a (unique) nested set of dates.
 	 * 
-	 * @param type $component
-	 * @return type
+	 * Sorts a list that is sorted by years, then months and then days
+	 *  * removing empty entries
+	 *  * uid keys
+	 *  
+	 * @param array $dateList YEAR[] => MONTH[] =>  DAY[] => components[]
+	 * @return array the sorted array
 	 */
-	function computeEndDateFormatOfComponent($component)
+	function sortNestedDates( $dateList )
 	{
-		$end = $component->getProperty('dtend');
-		if (!empty($end))
-		{				
-			$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
-		}
-		if (empty($end) && ( $component->objName == 'vtodo' ))
+		foreach ($dateList as $y => $yeararr)
 		{
-			$end = $component->getProperty('due');
-			if (!empty($end))
+			foreach ($yeararr as $m => $montharr)
 			{
-				$endDateFormat = ( isset($end['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
+				foreach ($montharr as $d => $dayarr)
+				{
+					if (empty($dateList[$y][$m][$d]))
+						unset($dateList[$y][$m][$d]);
+					else
+						$dateList[$y][$m][$d] = array_values($dayarr); // skip tricky UID-index, hoping they are in hour order.. .
+				}
+				if (empty($dateList[$y][$m]))
+					unset($dateList[$y][$m]);
+				else
+					ksort($dateList[$y][$m]);
 			}
+			if (empty($dateList[$y]))
+				unset($dateList[$y]);
+			else
+				ksort($dateList[$y]);
 		}
-		if (empty($end))
-		{				
-			$endDateFormat = ( isset($start['hour'])) ? 'Y-m-d H:i:s' : 'Y-m-d';
-		}
-		return $endDateFormat;
-	}
-	
-	function doesEndDateOfComponentExist($component)
-	{
-		$end = $component->getProperty('dtend');
-		if (!empty($end))
-		{
-			return TRUE;
-		}
-		return FALSE;
-	}
-	
-	function doesDueDateOfComponentExist($component)
-	{		
-		$end = $component->getProperty('dtend');
-		if (empty($end) && ( $component->objName == 'vtodo' ))
-		{
-			$end = $component->getProperty('due');
-			if (!empty($end))
-			{
-				return TRUE;
-			}
-		}
-		return FALSE;
-	}
-	
-	function doesDurationOfComponentExist($component)
-	{
-		if (empty($end))
-		{
-			$end = $component->getProperty('duration', FALSE, FALSE, TRUE); // in dtend (array) format
-			if (!empty($end))
-				return TRUE;
-		}			
-		return FALSE;
+		
+		ksort($dateList);
+		
+		return $dateList;
 	}
 
 	/**

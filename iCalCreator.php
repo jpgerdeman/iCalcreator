@@ -61,6 +61,8 @@ include_once __DIR__.'/iCalCreator/Component/vtimezone.class.php';
 include_once __DIR__.'/iCalCreator/Component/vtodo.class.php';
 include_once __DIR__.'/iCalCreator/Component/vjournal.class.php';
 include_once __DIR__.'/iCalCreator/Component/vfreebusy.class.php';
+include_once __DIR__.'/iCalCreator/Component/Decorator/Component_Decorator.class.php';
+include_once __DIR__.'/iCalCreator/Component/Decorator/Component_Decorator_TimeSelector.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/vcalendar.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/HTTPvcalendar.class.php';
 include_once __DIR__.'/iCalCreator/vcalendar/renderer/baserenderer.class.php';
