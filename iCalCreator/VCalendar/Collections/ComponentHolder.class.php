@@ -6,7 +6,7 @@
  * An elaborate search mechanism makes deleting, adding, selection certan 
  * components easier. The implemented interfaces allow for array-like behaviour.
  */
-class ComponentHolder implements ArrayAccess, Iterator, Countable
+class ComponentHolder extends ComponentCollection
 {
 
 	protected $components = array();
@@ -235,42 +235,6 @@ class ComponentHolder implements ArrayAccess, Iterator, Countable
 		}
 
 		return $index;
-	}
-
-	/**
-	 * Intersect the given (array of) component type with allowed types.
-	 * 
-	 * @param mixed $cType ComponentType string or Array thereof
-	 * @return mixed
-	 */
-	private function intersectValidTypes($cType)
-	{
-		/* intersect cTypes with valid types */
-		$validTypes = array('vevent', 'vtodo', 'vjournal', 'vfreebusy');
-		if (is_array($cType))
-		{
-			foreach ($cType as $cix => $theType)
-			{
-				$cType[$cix] = $theType = strtolower($theType);
-				if (!in_array($theType, $validTypes))
-					$cType[$cix] = 'vevent';
-			}
-			$cType = array_unique($cType);
-		}
-		elseif (!empty($cType))
-		{
-			$cType = strtolower($cType);
-			if (!in_array($cType, $validTypes))
-				$cType = array('vevent');
-			else
-				$cType = array($cType);
-		}
-		else
-			$cType = $validTypes;
-		if (0 >= count($cType))
-			$cType = $validTypes;
-
-		return $cType;
 	}
 
 	/**
@@ -958,138 +922,6 @@ class ComponentHolder implements ArrayAccess, Iterator, Countable
 		$componentNames = array('vevent', 'vtodo', 'vjournal', 'vfreebusy', 'valarm', 'vtimezone');
 		return in_array(strtolower($arg), $componentNames);
 	}
-
-	/**
-	 * Returns wether the instance has an element at the given offset.
-	 * 
-	 * @implements ArrayAccess
-	 * 
-	 * @param mixed $offset
-	 * @return bool
-	 */
-	public function offsetExists($offset)
-	{
-		return isset($this->components[$offset]);
-	}
-
-	/**
-	 * Returns the element at the given offset.
-	 * 
-	 * @implements ArrayAccess
-	 * 
-	 * @param mixed $offset
-	 * @return mixed
-	 */
-	public function offsetGet($offset)
-	{
-		return $this->components[$offset];
-	}
-
-	/**
-	 * Sets the given value at the offset.
-	 * 
-	 * @implements ArrayAccess
-	 * 
-	 * @param mixed $offset
-	 * @param mixed $value
-	 * @return void
-	 */
-	public function offsetSet($offset, $value)
-	{
-		if ($offset != null)
-		{
-			return $this->components[$offset] = $value;
-		}
-		else
-		{
-			return $this->components[] = $value;
-		}
-	}
-
-	/**
-	 * Remove the value at the given offset, and remove te offset.
-	 * 
-	 * @implements ArrayAccess
-	 * 
-	 * @param mixed $offset
-	 */
-	public function offsetUnset($offset)
-	{
-		unset($this->components[$offset]);
-	}
-
-	/**
-	 * Returns the value at the current position.
-	 * 
-	 * @implements Iterator
-	 * 
-	 * @return mixed
-	 */
-	public function current()
-	{
-		return $this->components[$this->currentKey];
-	}
-
-	/**
-	 * Returns the offet of the current position.
-	 * 
-	 * @implements Iterator
-	 * 
-	 * @return mixed
-	 */
-	public function key()
-	{
-		return $this->currentKey;
-	}
-
-	/**
-	 * Sets the curent offset to the next in line.
-	 * 
-	 * @implements Iterator
-	 * 
-	 * @return mixed
-	 */
-	public function next()
-	{
-		return $this->currentKey++;
-	}
-
-	/**
-	 * Sets the current offset to the first element.
-	 * 
-	 * @implements Iterator
-	 * 
-	 * @return void
-	 */
-	public function rewind()
-	{
-		return $this->currentKey = 0;
-	}
-
-	/**
-	 * Wether the current offset is valid (set).
-	 * 
-	 * @implements Iterator
-	 * 
-	 * @return bool
-	 */
-	public function valid()
-	{
-		return isset($this->components[$this->currentKey]);
-	}
-
-	/**
-	 * Returns the number of components.
-	 * 
-	 * @implements Countable
-	 * 
-	 * @return int
-	 */
-	public function count()
-	{
-		return count($this->components);
-	}
-
 }
 
 ?>
