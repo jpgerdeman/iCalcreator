@@ -50,17 +50,17 @@ class durationTest extends calendarComponent_TestCase
 			// Interval description, expected iso representation
 			array('P1W', 'P1W'),
 			array('PT3H4M5S', 'PT3H4M5S'),
-			array('P2DT4H', 'P2DT4H0M0S'),
-			array('PT4H', 'PT4H0M0S'),
-			array('PT30M', 'PT0H30M0S'),
-			array('PT0H1M30S', 'PT0H1M30S'),
-			array('PT1H0M0S', 'PT1H0M0S'),
-			array('P1T0H0M0S', 'PT10H0M0S'),
-			array('P1T1H0M0S', 'PT11H0M0S'),
-			array('P1T0H5M0S', 'PT10H5M0S'),
-			array(array('day' => 2, 'hour' => 3, 'sec' => 5), 'P2DT3H0M5S'),
-			array(array( 'sec' => 61 ),'PT0H1M1S'),
-			array(array( 'sec' => 7200 ),'PT2H0M0S'),
+			array('P2DT4H', 'P2DT4H'),
+			array('PT4H', 'PT4H'),
+			array('PT30M', 'PT30M'),
+			array('PT0H1M30S', 'PT1M30S'),
+			array('PT1H0M0S', 'PT1H'),
+			array('P1T0H0M0S', 'PT10H'),
+			array('P1T1H0M0S', 'PT11H'),
+			array('P1T0H5M0S', 'PT10H5M'),
+			array(array('day' => 2, 'hour' => 3, 'sec' => 5), 'P2DT3H5S'),
+			array(array( 'sec' => 61 ),'PT1M1S'),
+			array(array( 'sec' => 7200 ),'PT2H'),
 			array(array( 'sec' => 6 * 7 * 24 * 60 * 60 ),'P6W'),
 		);
 	}
@@ -70,10 +70,10 @@ class durationTest extends calendarComponent_TestCase
 		return array( 
 			array(array(1), 'P1W'),
 			array(array(FALSE, 2), 'P2D'),
-			array(array(FALSE, 2, 3), 'P2DT3H0M0S'),
+			array(array(FALSE, 2, 3), 'P2DT3H'),
 			array(array(FALSE, FALSE, 3, 4, 5), 'PT3H4M5S'),
-			array(array(FALSE, FALSE, FALSE, 4, 5), 'PT0H4M5S'),
-			array(array(FALSE, FALSE, FALSE, FALSE, 5), 'PT0H0M5S'),
+			array(array(FALSE, FALSE, FALSE, 4, 5), 'PT4M5S'),
+			array(array(FALSE, FALSE, FALSE, FALSE, 5), 'PT5S'),
 			);
 	}
 }

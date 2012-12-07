@@ -33,7 +33,7 @@ class COMPLETEDTest extends calendarComponent_TestCase
 		$comp = new vtodo();
 		$comp->setProperty( 'completed', $date, array('TZID' => $tzoff));
 		$actual = $comp->createCompleted();		
-		$expected = 'COMPLETED;TZID='.$tzoff.':'.$dateiso.'Z';
+		$expected = 'COMPLETED:'.$utciso;
 		$this->assertStringEquals($expected, $actual, 'If an offset is supplied as TZID, Greenwich Time (indicated by a Z) should be returned');
 		
 		$comp = new vtodo();

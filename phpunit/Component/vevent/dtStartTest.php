@@ -57,7 +57,7 @@ class dtStartTest extends calendarComponent_TestCase
 		$comp->setProperty( 'dtstart', $date );
 		$comp->setConfig( 'TZID', $tzid );
 		$end = $comp->createDtstart();
-		$this->assertStringEquals('DTSTART:'.$dateiso, $end, 'The timezone should be in created date output');
+		$this->assertStringEquals('DTSTART;TZID='.$tzid.':'.$dateiso, $end, 'The timezone should be in created date output');
 	}
 
 	/**

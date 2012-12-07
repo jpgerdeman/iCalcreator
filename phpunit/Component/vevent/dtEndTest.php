@@ -57,7 +57,7 @@ class dtEndTest extends calendarComponent_TestCase
 		$comp->setProperty( 'dtend', $date );
 		$comp->setConfig( 'TZID', $tzid );
 		$end = $comp->createDtend();
-		$this->assertStringEquals('DTEND:'.$dateiso, $end);
+		$this->assertStringEquals('DTEND;TZID='.$tzid.':'.$dateiso, $end);
 	}
 
 	/**

@@ -57,7 +57,7 @@ class dueTest extends calendarComponent_TestCase
 		$comp->setProperty( 'due', $date );
 		$comp->setConfig( 'TZID', $tzid );
 		$end = $comp->createDue();
-		$this->assertStringEquals('DUE:'.$dateiso, $end );
+		$this->assertStringEquals('DUE;TZID='.$tzid.':'.$dateiso, $end );
 	}
 
 	/**

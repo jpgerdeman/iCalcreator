@@ -33,7 +33,7 @@ class createdTest extends calendarComponent_TestCase
 		$comp = new vjournal();
 		$comp->setProperty( 'created', $date, array('TZID' => $tzoff));
 		$actual = $comp->createCreated();		
-		$expected = 'CREATED;TZID='.$tzoff.':'.$dateiso.'Z';
+		$expected = 'CREATED:'.$utciso;
 		$this->assertStringEquals($expected, $actual, 'If an offset is supplied as TZID, Greenwich Time (indicated by a Z) should be returned');
 		
 		$comp = new vjournal();

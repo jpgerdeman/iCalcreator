@@ -96,8 +96,9 @@ class exdateTest extends calendarComponent_TestCase
 		$date = $this->appendTimezone($date, $tzid);		
 		$comp = new vevent();
 		$comp->setProperty( 'exdate', array($date));
-		$end = $comp->createExdate();
-		$this->assertStringEquals('EXDATE;TZID='.$tzid.':'.$dateiso, $end, 'If a dtend is set with a trailing timezone it has to be returned as TZID');
+		$actual = $comp->createExdate();
+		$expected = 'EXDATE;TZID='.$tzid.':'.$dateiso;
+		$this->assertStringEquals($expected, $actual, 'If a dtend is set with a trailing timezone it has to be returned as TZID');
 	} 
 	
 	public function testSettingMultipleDates()

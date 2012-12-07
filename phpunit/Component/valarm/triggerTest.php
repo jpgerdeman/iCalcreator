@@ -84,7 +84,7 @@ class triggerTest extends calendarComponent_TestCase
 		array( array( 'year'=>2007, 'month'=>6, 'day'=>5, 'hour'=>2, 'min'=>2, 'sec'=>3), '20070605T020203Z' ),
 			array( '14 august 2006', '20060814T000000Z' ),
 			array( '19970224T070000Z', '19970224T070000Z' ),
-			array( array('timestamp' => 1354377593), '20121201T155953Z' ),
+			array( array('timestamp' => 1354377593), '20121201T165953Z' ),
 			);
 	}
 }
